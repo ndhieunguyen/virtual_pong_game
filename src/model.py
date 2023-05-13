@@ -17,7 +17,7 @@ class DeepQNet(nn.Module):
             nn.LeakyReLU(inplace=True),
         )
         self.fc = nn.Sequential(
-            nn.Linear(7 * 7 * 64, 512),
+            nn.Linear(36864, 512),
             nn.LeakyReLU(inplace=True),
             nn.Linear(512, n_actions),
         )
@@ -36,3 +36,14 @@ class DeepQNet(nn.Module):
         output = output.view(output.size(0), -1)
         output = self.fc(output)
         return output
+
+
+# Test model
+if __name__ == "__main__":
+    import torch
+
+    shape = (4, 3, 224, 224)
+    n_actions = 6
+    model = DeepQNet(input_shape=shape[1:], n_actions=n_actions)
+    tensor = torch.zeros((shape))
+    print(model(tensor))
