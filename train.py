@@ -19,7 +19,7 @@ def get_args():
     parser.add_argument("--initial_epsilon", type=float, default=0.1)
     parser.add_argument("--final_epsilon", type=float, default=1e-4)
     parser.add_argument("--num_decay_iters", type=float, default=2000000)
-    parser.add_argument("--num_iters", type=int, default=2000000)
+    parser.add_argument("--num_iters", type=int, default=200000)
     parser.add_argument("--replay_memory_size", type=int, default=50000, help="Number of epoches between testing phases")
     parser.add_argument("--saved_folder", type=str, default="models")
 
@@ -77,7 +77,7 @@ def train(opt):
         u = random.random()
         random_action = u <= epsilon
         if random_action:
-            action = random.randint(0, 6)  # Exploration
+            action = random.randint(0, 5)  # Exploration
         else:
             action = torch.argmax(prediction, axis=1)[0]  # Exploitation
 
@@ -122,7 +122,30 @@ def train(opt):
 
         current_prediction_batch = model(state_batch)
         next_prediction_batch = model(next_state_batch)
-        exit()
+
+        y_batch = torch.cat(
+            tuple(
+                reward if done else reward + opt.gamma * torch.max(prediction)
+                for reward, done, prediction in zip(reward_batch, done_batch, next_prediction_batch)
+            )
+        )
+
+        q_value = torch.sum(current_prediction_batch * action_batch, dim=1)
+        optimizer.zero_grad()
+        loss = criterion(q_value, y_batch)
+        loss.backward()
+        optimizer.step()
+
+        state = next_state
+        iter += 1
+        print(
+            "Iteration: {}/{}, Loss: {:.5f}, Epsilon {:.5f}, Reward: {}".format(iter + 1, opt.num_iters, loss, epsilon, reward)
+        )
+        if (iter + 1) % 50000 == 0:
+            checkpoint = {"iter": iter, "model_state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
+            torch.save(checkpoint, checkpoint_path)
+            with open(memory_path, "wb") as f:
+                pickle.dump(replay_memory, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
