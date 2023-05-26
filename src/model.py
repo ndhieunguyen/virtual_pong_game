@@ -1,4 +1,5 @@
 from torch import nn
+import numpy as np
 
 
 class DeepQNet(nn.Module):
@@ -17,7 +18,7 @@ class DeepQNet(nn.Module):
             nn.LeakyReLU(inplace=True),
         )
         self.fc = nn.Sequential(
-            nn.Linear(36864, 512),
+            nn.Linear(22528, 512),
             nn.LeakyReLU(inplace=True),
             nn.Linear(512, n_actions),
         )
@@ -42,8 +43,9 @@ class DeepQNet(nn.Module):
 if __name__ == "__main__":
     import torch
 
-    shape = (4, 3, 224, 224)
+    shape = (1, 4, 210, 160)
     n_actions = 6
     model = DeepQNet(input_shape=shape[1:], n_actions=n_actions)
-    tensor = torch.zeros((shape))
+    tensor = torch.rand((shape))
     print(model(tensor))
+    print(torch.argmax(model(tensor), axis=1))
